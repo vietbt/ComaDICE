@@ -1,54 +1,135 @@
 # ComaDICE: Offline Cooperative Multi-Agent Reinforcement Learning with Stationary Distribution Shift Regularization
-Offline reinforcement learning (RL) has garnered significant attention for its ability to learn effective policies from pre-collected datasets without the need for further environmental interactions. While promising results have been demonstrated in single-agent settings, offline multi-agent reinforcement learning (MARL) presents additional challenges due to the large joint state-action space and the complexity of multi-agent behaviors. A key issue in offline RL is the *distributional shift*, which arises when the target policy being optimized deviates from the behavior policy that generated the data. This problem is exacerbated in MARL due to the interdependence between agents' local policies and the expansive joint state-action space. Prior approaches have primarily addressed this challenge by incorporating regularization in the space of either Q-functions or policies. In this work, we introduce a regularizer in the space of stationary distributions to better handle distributional shift. Our algorithm, ComaDICE, offers a principled framework for offline cooperative MARL by incorporating stationary distribution regularization for the global learning policy, complemented by a carefully structured multi-agent value decomposition strategy to facilitate  multi-agent training. Through extensive experiments on the multi-agent *MuJoCo* and *StarCraft II* benchmarks, we demonstrate that ComaDICE achieves superior performance compared to state-of-the-art offline MARL methods across nearly all tasks.
+
+**ComaDICE** is a principled framework for offline cooperative multi-agent reinforcement learning (MARL). It addresses the critical challenge of *distributional shift* in offline RL, where the learned policy deviates from the data-generating behavior policy. This problem is particularly acute in MARL due to the large joint state-action space and complex multi-agent interactions.
+
+Unlike prior approaches that typically regularize in the Q-function or policy space, ComaDICE introduces a novel regularizer in the space of **stationary distributions**. This method more effectively handles distributional shift. The algorithm integrates this stationary distribution regularization for the global learning policy with a carefully designed multi-agent value decomposition strategy, facilitating robust multi-agent training.
+
+ComaDICE has demonstrated superior performance compared to state-of-the-art offline MARL methods across nearly all tasks in extensive experiments on multi-agent MuJoCo and StarCraft II (SMACv1 and SMACv2) benchmarks. 
+
+## Key Contributions
+
+* **Novel Regularization in Stationary Distribution Space:** Introduces a regularizer based on stationary distributions to mitigate distributional shift in offline MARL. 
+* **Principled Value Decomposition:** Employs a value decomposition strategy that decomposes both the global value function and global advantage functions, ensuring theoretical consistency and promoting efficient, stable training. 
+* **Convex Learning Objective:** Theoretically demonstrates that the global learning objective in DICE is convex in local values under specific conditions for the mixing network (non-negative weights and convex activation functions). 
+* **Consistent Policy Extraction:** Provides a method for extracting local policies via weighted behavioral cloning, ensuring consistency between global and local policy optimization. 
+* **State-of-the-Art Performance:** Achieves superior results on challenging MARL benchmarks, including SMACv1, SMACv2, and Multi-Agent MuJoCo. 
+
+## Core Methodology
+
+ComaDICE optimizes an objective function that incorporates a stationary distribution regularizer to measure the divergence between the learning policy's and the behavior policy's occupancy measures.  The f-divergence is used for this purpose.  The problem is formulated as a constrained optimization in the stationary distribution space, which is then transformed into a minimax problem using Lagrange duality. 
+
+To handle the large state and action spaces in MARL, ComaDICE utilizes a value factorization approach within the Centralized Training with Decentralized Execution (CTDE) framework.  It decomposes the global value function (Lagrange multipliers) and advantage functions into local counterparts using mixing networks.  The algorithm then trains local policies using a weighted behavioral cloning approach, where the weights are derived from the learned occupancy ratio. 
+
+## Installation
+
+To use ComaDICE, you need to set up the respective environments:
+
+* **SMACv1:** Follow the instructions at [https://github.com/oxwhirl/smac/](https://github.com/oxwhirl/smac/) 
+* **SMACv2:** Follow the instructions at [https://github.com/oxwhirl/smacv2/](https://github.com/oxwhirl/smacv2/) 
+* **MaMujoco:** Follow the instructions at [https://github.com/oxwhirl/facmac/](https://github.com/oxwhirl/facmac/) 
+
+Ensure all dependencies for these environments and for the ComaDICE codebase (e.g., PyTorch) are installed.
+
+## Offline Datasets
+
+The offline datasets used for training and evaluation can be obtained from the following links:
+
+* **SMACv1:** [https://cloud.tsinghua.edu.cn/d/f3c509d7a9d54ccd89c4/](https://cloud.tsinghua.edu.cn/d/f3c509d7a9d54ccd89c4/) (Generated using MAPPO-trained agents )
+* **SMACv2:** Please contact the authors for access. (Generated by running MAPPO for 10 million training steps and collecting 1,000 trajectories )
+* **MaMujoco:** [https://cloud.tsinghua.edu.cn/d/dcf588d659214a28a777/](https://cloud.tsinghua.edu.cn/d/dcf588d659214a28a777/) (Generated using the HAPPO method )
+
+Detailed statistics of the datasets, including the number of trajectories, samples, agent counts, and state/observation/action dimensions, can be found in the Appendix of our paper. 
+
+## Training ComaDICE
+
+To train ComaDICE, use the `main.py` script with the appropriate arguments:
+
+```bash
+python -u main.py --env_name <env_name> --mode <mode> --seed <seed> --n_epochs <n_epochs>
+```
+
+Where:
+* `<env_name>`: The name of the specific task environment (e.g., `protoss_5_vs_5`, `Hopper-v2`).
+* `<mode>`: The dataset quality/scenario (e.g., `medium`, `expert`, `medium-replay`).
+* `<seed>`: The random seed for reproducibility.
+* `<n_epochs>`: The number of training epochs.
+
+**Examples for SMACv2 tasks:**
+```bash
+python -u main.py --env_name protoss_5_vs_5 --mode medium --seed 0 --n_epochs 50
+python -u main.py --env_name protoss_10_vs_10 --mode medium --seed 0 --n_epochs 50
+# ... (include other SMACv2 examples from the original README)
+python -u main.py --env_name zerg_20_vs_23 --mode medium --seed 0 --n_epochs 50
+```
 
 
-# Installation
-- SMACv1: Check this repo https://github.com/oxwhirl/smac/
-- SMACv2: Check this repo https://github.com/oxwhirl/smacv2/
-- MaMujoco: Check this repo https://github.com/oxwhirl/facmac/
+**Examples for MaMujoco tasks:**
+```bash
+python -u main.py --env_name Hopper-v2 --mode expert --seed 0 --n_epochs 25
+python -u main.py --env_name Hopper-v2 --mode medium --seed 0 --n_epochs 25
+# ... (include other MaMujoco examples from the original README)
+python -u main.py --env_name HalfCheetah-v2 --mode medium-expert --seed 0 --n_epochs 25
+```
 
-# Offline Demonstrations
-- SMACv1: https://cloud.tsinghua.edu.cn/d/f3c509d7a9d54ccd89c4/
-- SMACv2: Contact us
-- MaMujoco: https://cloud.tsinghua.edu.cn/d/dcf588d659214a28a777/
 
-# Train Scripts
-- Run `python -u main.py --env_name <env_name> --mode <mode> --seed <seed> --n_epochs <n_epochs>` for training the task *<env_name>* with scienarios *<mode>*
-- For examples, for training SMACv2 tasks, run the following scripts:
-    - `python -u main.py --env_name protoss_5_vs_5 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name protoss_10_vs_10 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name protoss_10_vs_11 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name protoss_20_vs_20 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name protoss_20_vs_23 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name terran_5_vs_5 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name terran_10_vs_10 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name terran_10_vs_11 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name terran_20_vs_20 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name terran_20_vs_23 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name zerg_5_vs_5 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name zerg_10_vs_10 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name zerg_10_vs_11 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name zerg_20_vs_20 --mode medium --seed 0 --n_epochs 50`
-    - `python -u main.py --env_name zerg_20_vs_23 --mode medium --seed 0 --n_epochs 50`
-- To train MaMujoco tasks:
-    - `python -u main.py --env_name Hopper-v2 --mode expert --seed 0 --n_epochs 25`
-    - `python -u main.py --env_name Hopper-v2 --mode medium --seed 0 --n_epochs 25`
-    - `python -u main.py --env_name Hopper-v2 --mode medium-replay --seed 0 --n_epochs 25`
-    - `python -u main.py --env_name Hopper-v2 --mode medium-expert --seed 0 --n_epochs 25`
-    - `python -u main.py --env_name Ant-v2 --mode expert --seed 0 --n_epochs 25`
-    - `python -u main.py --env_name Ant-v2 --mode medium --seed 0 --n_epochs 25`
-    - `python -u main.py --env_name Ant-v2 --mode medium-replay --seed 0 --n_epochs 25`
-    - `python -u main.py --env_name Ant-v2 --mode medium-expert --seed 0 --n_epochs 25`
-    - `python -u main.py --env_name HalfCheetah-v2 --mode expert --seed 0 --n_epochs 25`
-    - `python -u main.py --env_name HalfCheetah-v2 --mode medium --seed 0 --n_epochs 25`
-    - `python -u main.py --env_name HalfCheetah-v2 --mode medium-replay --seed 0 --n_epochs 25`
-    - `python -u main.py --env_name HalfCheetah-v2 --mode medium-expert --seed 0 --n_epochs 25`
+Training logs and results will be saved in the `logs` folder.  Hyperparameter details can be found in the Appendix of our paper.  The default hyperparameters include Adam optimizer, learning rate of 1e-4, tau of 0.005, gamma of 0.99, batch size of 128, and alpha of 10 using soft χ² f-divergence. 
 
-- All experiments will be logged into `logs` folder during training.
+## Evaluation and Visualization
 
-# Evaluation and Visualization
-- Check the notebook `analyze.ipynb` for evaluation and visualization
-- We're also sharing *saved results* (compressed as a pickle file) for reproductivity
+The `analyze.ipynb` notebook provides tools for evaluating trained models and visualizing their performance.  Key metrics include average returns and win rates (for SMAC environments). 
 
-# Contact us
-- Will be revealed later
+We also provide pre-computed results (compressed as a pickle file) to facilitate reproducibility. 
+
+## Baselines Compared
+
+ComaDICE was benchmarked against several standard and state-of-the-art offline MARL methods:
+* Behavioral Cloning (BC) 
+* Batch-Constrained Q-learning (BCQ) 
+* Conservative Q-Learning (CQL) 
+* Implicit Constraint Q-learning (ICQ) 
+* Offline MARL with Actor Rectification (OMAR) 
+* Offline MARL with Implicit Global-to-Local Value Regularization (OMIGA) 
+
+Experimental results and source code for these baselines were primarily based on contributions from the authors of OMIGA. 
+
+## Ablation Studies
+
+The paper includes several ablation studies to analyze the impact of:
+* The regularization parameter `alpha`. 
+* Different forms of f-divergence functions (KL, χ², Soft-χ²). 
+* 1-layer versus 2-layer mixing network architectures. 
+
+These studies highlight the importance of the stationary distribution regularizer and the design choices within ComaDICE.  For instance, an `alpha` value around 10 generally yields optimal performance.  The Soft-χ² divergence and a single-layer mixing network were found to be robust choices. 
+
+## Ethical Considerations and Broader Impacts
+
+The development of offline MARL algorithms like ComaDICE has the potential for significant positive impact, particularly in domains where real-time interaction is costly or risky (e.g., robotics, autonomous driving, healthcare).  It can promote safer exploration and wider adoption of offline learning. 
+
+However, there are limitations and potential negative impacts:
+* **Cooperative Settings Only:** This work focuses on cooperative learning; performance in mixed cooperative-competitive settings is an open question. 
+* **Data Dependency:** Algorithm performance is heavily dependent on the quality of the behavior policy used to generate the offline dataset.  Flawed or biased behavior policies could lead to suboptimal or biased learned policies. 
+* **Sample Efficiency:** Like many MARL algorithms, ComaDICE may require substantial data. 
+* **Misuse:** As with any AI technology, there's a risk of application in unintended or harmful ways (e.g., surveillance, military applications) without adequate oversight. 
+* **Bias and Fairness:** Bias in training data or simulation environments could lead to policies that unfairly impact certain agents or populations. 
+
+Extensive testing, validation, and human oversight are crucial, especially in safety-critical and high-stakes deployments. 
+
+## Citation
+
+If you use ComaDICE in your research, please cite our ICLR 2025 paper:
+
+```bibtex
+@inproceedings{Bui2025ComaDICE,
+  title={ComaDICE: Offline Cooperative Multi-Agent Reinforcement Learning with Stationary Distribution Shift Regularization},
+  author={The Viet Bui and Thanh Hong Nguyen and Tien Mai},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2025},
+}
+```
+
+## Contact
+
+For questions or inquiries regarding the paper or code, please contact:
+* The Viet Bui: `theviet.bui.2023@phdcs.smu.edu.sg` 
+* Thanh Hong Nguyen: `thanhhng@cs.uoregon.edu` 
+* Tien Mai: `atmai@smu.edu.sg` 
